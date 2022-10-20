@@ -11,7 +11,7 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
-use topdown::cell::Cell;
+use topdown::{drawable::Drawable, boxshape::BoxShape};
 
 
 const WIDTH: u32 = 100;
@@ -82,7 +82,7 @@ fn main() -> Result<(), Error> {
 
 
 pub struct World {
-    pub cells: Vec<Cell>,
+    pub objects: Vec<Box<dyn Drawable>>,
     pub width: usize,
     pub height: usize,
     pub time: f32,
@@ -90,22 +90,12 @@ pub struct World {
 
 impl World {
     pub fn new(width: usize, height: usize) -> World {
-        let mut cells =  vec![];
 
-        let scaleX = 15.0;
-        let scaleY = 50.0;
-        let scaleZ = 15.0;
-        let off = 15.0;
-        for z in 0..=1 {
-            for y in 0..=1 {
-                for x in 0..=1 {
-                    cells.push(Cell {pos: Vec3::new(x as f32 * scaleX + off, y as f32 * scaleY + off, z as f32 * scaleZ + off), color: (255, 0, 0, 255)});
-                };
-            };
-        };
 
         World {
-            cells,
+            objects: vec![
+                Box::new(BoxShape::new())
+            ],
             width,
             height,
             time: 0.0,
@@ -139,57 +129,50 @@ impl World {
 
     pub fn update(&mut self) {
         self.time += 0.04;
-        self.set_line(self.cells[0].pos, self.cells[1].pos);
-        self.set_line(self.cells[0].pos, self.cells[2].pos);
-        self.set_line(self.cells[1].pos, self.cells[3].pos);
-        self.set_line(self.cells[2].pos, self.cells[3].pos);
-
-        self.set_line(self.cells[4].pos, self.cells[5].pos);
-        self.set_line(self.cells[4].pos, self.cells[6].pos);
-        //self.set_line(self.cells[5].pos, self.cells[6].pos);
-        self.set_line(self.cells[5].pos, self.cells[7].pos);
     }
 
     pub fn draw(&self, screen: &mut [u8]) {
         screen.fill(0);
 
-        for cell in self.cells.iter() {
-            let pos2 = Vec3::new(cell.pos.x, cell.pos.y, cell.pos.z);
-            let rot_pt = (7.5 + 15.0) * Vec3::new(1.0, 1.0, 1.0);
-            let mut pos_rotated = self.rotateY(pos2 - rot_pt, self.time);
-            pos_rotated += rot_pt;
-            pos_rotated = self.rotateX(pos_rotated - rot_pt, 0.5);
-            pos_rotated += rot_pt;
-            let pos_2d = self.project(pos_rotated);
-            let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);            
+        for object in self.objects.iter() {
+            let origin = object.get_origin();
+            for (point, color) in object.get_points() {
+                let mut pt_rot = self.rotateY(*point - origin, self.time);
+                pt_rot += origin;
+                pt_rot = self.rotateX(pt_rot - origin, 0.5);
+                pt_rot += origin;
 
-            if let Some(idx) = idx {
-                let c = cell.color;
-                screen[idx + 0] = c.0;
-                screen[idx + 1] = c.1;
-                screen[idx + 2] = c.2;
-                screen[idx + 3] = c.3;
+                let pos_2d = self.project(pt_rot);
+                let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);            
+
+                if let Some(idx) = idx {
+                    let c = color.as_255();
+                    screen[idx + 0] = c.r as u8;
+                    screen[idx + 1] = c.g as u8;
+                    screen[idx + 2] = c.b as u8;
+                    screen[idx + 3] = c.a as u8;
+                };
             };
         };
         
     }
 
-    fn set_line(&mut self, mut start: Vec3, mut end: Vec3) {
-        // probably should do sutherland-hodgeman if this were more serious.
-        // instead just clamp the start pos, and draw until moving towards the
-        // end pos takes us out of bounds.
-        start = start.round();
-        end = end.round();
-        //let x0 = x0.max(0).min(self.width as isize);
-        //let y0 = y0.max(0).min(self.height as isize);
-        for (x, y, z) in line_drawing::Bresenham3d::new((start.x as i32, start.y as i32, start.z as i32), (end.x as i32, end.y as i32, end.z as i32)) {
-            if let Some(i) = self.grid_idx(x, y) {
-                self.cells.push(Cell{color: (255, 0, 0, 255), pos: Vec3::new(x as f32, y as f32, z as f32)});
-            } else {
-                break;
-            }
-        }
-    }
+    // fn set_line(&mut self, mut start: Vec3, mut end: Vec3) {
+    //     // probably should do sutherland-hodgeman if this were more serious.
+    //     // instead just clamp the start pos, and draw until moving towards the
+    //     // end pos takes us out of bounds.
+    //     start = start.round();
+    //     end = end.round();
+    //     //let x0 = x0.max(0).min(self.width as isize);
+    //     //let y0 = y0.max(0).min(self.height as isize);
+    //     for (x, y, z) in line_drawing::Bresenham3d::new((start.x as i32, start.y as i32, start.z as i32), (end.x as i32, end.y as i32, end.z as i32)) {
+    //         if let Some(i) = self.grid_idx(x, y) {
+    //             self.cells.push(Cell{color: (255, 0, 0, 255), pos: Vec3::new(x as f32, y as f32, z as f32)});
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    // }
 
     pub fn project(&self, point: Vec3) -> Vec3 {
         Mat3::IDENTITY * point
