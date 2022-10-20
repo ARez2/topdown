@@ -1,8 +1,8 @@
 use glam::{Vec3};
 
-use crate::{Drawable, Color, drawutil::set_line};
+use crate::{Drawable, Color, drawutil::{set_line, fill_vertical, fill_horizontal}};
 
-enum BoxSides {
+enum BoxPt {
     TopFrontL,
     TopFrontR,
     TopBackL,
@@ -17,10 +17,12 @@ enum BoxSides {
 
 pub struct BoxShape {
     pub points: Vec<(Vec3, Color)>,
+    pub pos: Vec3,
+    pub scale: Vec3,
 }
 
 impl BoxShape {
-    pub fn new() -> Self {
+    pub fn new(pos: Vec3, scale: Vec3) -> Self {
         let mut points = Vec::<(Vec3, Color)>::new();
         points.resize(8, (Vec3::new(0.0, 0.0, 0.0), Color::black()));
 
@@ -29,64 +31,63 @@ impl BoxShape {
         let scaleZ = 15.0;
         let off = 15.0;
         let color = Color::rgba(1.0, 0.0, 0.0, 1.0);
-        points[BoxSides::TopFrontL as usize] = (
-            Vec3::new(0.0 * scaleX + off, 0.0 * scaleY + off, 0.0 * scaleZ + off),
-            color
-        );
-        points[BoxSides::TopFrontR as usize] = (
-            Vec3::new(1.0 * scaleX + off, 0.0 * scaleY + off, 0.0 * scaleZ + off),
-            color
-        );
-        points[BoxSides::TopBackL as usize] = (
-            Vec3::new(0.0 * scaleX + off, 0.0 * scaleY + off, 1.0 * scaleZ + off),
-            color
-        );
-        points[BoxSides::TopBackR as usize] = (
-            Vec3::new(1.0 * scaleX + off, 0.0 * scaleY + off, 1.0 * scaleZ + off),
-            color
-        );
+        points[BoxPt::TopFrontL as usize] = (Vec3::new(0.0, 0.0, 0.0), color);
+        points[BoxPt::TopFrontR as usize] = (Vec3::new(1.0, 0.0, 0.0), color);
+        points[BoxPt::TopBackL as usize] = (Vec3::new(0.0, 0.0, 1.0),color);
+        points[BoxPt::TopBackR as usize] = (Vec3::new(1.0, 0.0, 1.0),color);
 
-        points[BoxSides::BottomFrontL as usize] = (
-            Vec3::new(0.0 * scaleX + off, 1.0 * scaleY + off, 0.0 * scaleZ + off),
-            color
-        );
-        points[BoxSides::BottomFrontR as usize] = (
-            Vec3::new(1.0 * scaleX + off, 1.0 * scaleY + off, 0.0 * scaleZ + off),
-            color
-        );
-        points[BoxSides::BottomBackL as usize] = (
-            Vec3::new(0.0 * scaleX + off, 1.0 * scaleY + off, 1.0 * scaleZ + off),
-            color
-        );
-        points[BoxSides::BottomBackR as usize] = (
-            Vec3::new(1.0 * scaleX + off, 1.0 * scaleY + off, 1.0 * scaleZ + off),
-            color
-        );
+        points[BoxPt::BottomFrontL as usize] = (Vec3::new(0.0, 1.0, 0.0),color);
+        points[BoxPt::BottomFrontR as usize] = (Vec3::new(1.0, 1.0, 0.0),color);
+        points[BoxPt::BottomBackL as usize] = (Vec3::new(0.0, 1.0, 1.0),color);
+        points[BoxPt::BottomBackR as usize] = (Vec3::new(1.0, 1.0, 1.0),color);
+        for pt in points.iter_mut() {
+            pt.0 *= scale;
+            pt.0 += pos;
+        };
 
         let tcol = Color::rgba(0.0, 1.0, 0.0, 1.0);
-        for pt in 
-        set_line(points[BoxSides::BottomFrontL as usize].0, points[BoxSides::BottomFrontR as usize].0, color).iter()
-        .chain(set_line(points[BoxSides::BottomFrontL as usize].0, points[BoxSides::BottomBackL as usize].0, color).iter())
-        .chain(set_line(points[BoxSides::BottomFrontR as usize].0, points[BoxSides::BottomBackR as usize].0, color).iter())
-        .chain(set_line(points[BoxSides::BottomBackL as usize].0, points[BoxSides::BottomBackR as usize].0, color).iter())
+        let blue = Color::rgba(0.0, 0.0, 1.0, 1.0);
         
-        // Connection between top and bottom
-        .chain(set_line(points[BoxSides::BottomFrontL as usize].0, points[BoxSides::TopFrontL as usize].0, color).iter())
-        .chain(set_line(points[BoxSides::BottomFrontR as usize].0, points[BoxSides::TopFrontR as usize].0, color).iter())
-        .chain(set_line(points[BoxSides::BottomBackL as usize].0, points[BoxSides::TopBackL as usize].0, color).iter())
-        .chain(set_line(points[BoxSides::BottomBackR as usize].0, points[BoxSides::TopBackR as usize].0, color).iter())
         
-        // Top face
-        .chain(set_line(points[BoxSides::TopFrontL as usize].0, points[BoxSides::TopBackL as usize].0, tcol).iter())
-        .chain(set_line(points[BoxSides::TopFrontR as usize].0, points[BoxSides::TopBackR as usize].0, tcol).iter())
-        .chain(set_line(points[BoxSides::TopFrontL as usize].0, points[BoxSides::TopFrontR as usize].0, tcol).iter())
-        .chain(set_line(points[BoxSides::TopBackL as usize].0, points[BoxSides::TopBackR as usize].0, tcol).iter())
-            {
-            points.push(*pt)
+        for pt in fill_horizontal(points[BoxPt::BottomBackR as usize].0, points[BoxPt::BottomFrontL as usize].0, blue) {
+            points.push(pt);
         };
+        for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomFrontR as usize].0, color) {
+            points.push(pt);
+        };
+        for pt in fill_vertical(points[BoxPt::TopBackL as usize].0, points[BoxPt::BottomBackR as usize].0, tcol) {
+            points.push(pt);
+        };
+        for pt in fill_horizontal(points[BoxPt::TopBackR as usize].0, points[BoxPt::TopFrontL as usize].0, blue) {
+            points.push(pt);
+        };
+
+        
+        // for pt in 
+        // set_line(points[BoxPt::BottomFrontL as usize].0, points[BoxPt::BottomFrontR as usize].0, color).iter()
+        // .chain(set_line(points[BoxPt::BottomFrontL as usize].0, points[BoxPt::BottomBackL as usize].0, color).iter())
+        // .chain(set_line(points[BoxPt::BottomFrontR as usize].0, points[BoxPt::BottomBackR as usize].0, color).iter())
+        // .chain(set_line(points[BoxPt::BottomBackL as usize].0, points[BoxPt::BottomBackR as usize].0, color).iter())
+        
+        // // Connection between top and bottom
+        // .chain(set_line(points[BoxPt::BottomFrontL as usize].0, points[BoxPt::TopFrontL as usize].0, color).iter())
+        // .chain(set_line(points[BoxPt::BottomFrontR as usize].0, points[BoxPt::TopFrontR as usize].0, color).iter())
+        // .chain(set_line(points[BoxPt::BottomBackL as usize].0, points[BoxPt::TopBackL as usize].0, color).iter())
+        // .chain(set_line(points[BoxPt::BottomBackR as usize].0, points[BoxPt::TopBackR as usize].0, color).iter())
+        
+        // // Top face
+        // .chain(set_line(points[BoxPt::TopFrontL as usize].0, points[BoxPt::TopBackL as usize].0, tcol).iter())
+        // .chain(set_line(points[BoxPt::TopFrontR as usize].0, points[BoxPt::TopBackR as usize].0, tcol).iter())
+        // .chain(set_line(points[BoxPt::TopFrontL as usize].0, points[BoxPt::TopFrontR as usize].0, tcol).iter())
+        // .chain(set_line(points[BoxPt::TopBackL as usize].0, points[BoxPt::TopBackR as usize].0, tcol).iter())
+        //     {
+        //     points.push(*pt)
+        // };
         
         BoxShape {
             points,
+            pos,
+            scale,
         }
     }
 }
@@ -102,9 +103,14 @@ impl Drawable for BoxShape {
             return Vec3::new(0.0, 0.0, 0.0);
         };
         let mut sum = Vec3::new(0.0, 0.0, 0.0);
+        let mut i = 0;
         for pt in self.points.iter() {
+            if i == 8 {
+                break;
+            };
             sum += pt.0;
+            i += 1;
         };
-        sum / self.points.len() as f32
+        sum / 8.0
     }
 }

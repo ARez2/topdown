@@ -3,6 +3,43 @@ use glam::Vec3;
 use crate::Color;
 
 
+
+pub fn fill_vertical(start: Vec3, end: Vec3, color: Color) -> Vec<(Vec3, Color)> {
+    let mut points = vec![];
+    let min = (start.y.round() as usize).min(end.y.round() as usize);
+    let max = (start.y.round() as usize).max(end.y.round() as usize);
+    for y in min..=max {
+        let mut linestart = start;
+        linestart.y = y as f32;
+        let mut lineend = end;
+        lineend.y = y as f32;
+        let linepts = set_line(linestart, lineend, color);
+        for pt in linepts.iter() {
+            points.push(*pt);
+        };
+    };
+    points
+}
+
+
+pub fn fill_horizontal(start: Vec3, end: Vec3, color: Color) -> Vec<(Vec3, Color)> {
+    let mut points = vec![];
+    let min = (start.x.round() as usize).min(end.x.round() as usize);
+    let max = (start.x.round() as usize).max(end.x.round() as usize);
+    for x in min..=max {
+        let mut linestart = start;
+        linestart.x = x as f32;
+        let mut lineend = end;
+        lineend.x = x as f32;
+        let linepts = set_line(linestart, lineend, color);
+        for pt in linepts.iter() {
+            points.push(*pt);
+        };
+    };
+    points
+}
+
+
 pub fn set_line(mut start: Vec3, mut end: Vec3, color: Color) -> Vec<(Vec3, Color)> {
     let mut points = vec![];
 

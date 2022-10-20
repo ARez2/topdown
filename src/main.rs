@@ -11,7 +11,7 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
-use topdown::{drawable::Drawable, boxshape::BoxShape};
+use topdown::{drawable::Drawable, boxshape::BoxShape, color::Color};
 
 
 const WIDTH: u32 = 100;
@@ -94,7 +94,14 @@ impl World {
 
         World {
             objects: vec![
-                Box::new(BoxShape::new())
+                Box::new(BoxShape::new(
+                    Vec3::new(15.0, 15.0, 0.0),
+                    Vec3::new(10.0, 50.0, 10.0),
+                )),
+                Box::new(BoxShape::new(
+                    Vec3::new(60.0, 60.0, 100.0),
+                    Vec3::new(10.0, 10.0, 10.0),
+                )),
             ],
             width,
             height,
@@ -134,6 +141,8 @@ impl World {
     pub fn draw(&self, screen: &mut [u8]) {
         screen.fill(0);
 
+        let mut all_points = Vec::<(Vec3, Color)>::new();
+
         for object in self.objects.iter() {
             let origin = object.get_origin();
             for (point, color) in object.get_points() {
@@ -142,18 +151,31 @@ impl World {
                 pt_rot = self.rotateX(pt_rot - origin, 0.5);
                 pt_rot += origin;
 
-                let pos_2d = self.project(pt_rot);
-                let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);            
-
-                if let Some(idx) = idx {
-                    let c = color.as_255();
-                    screen[idx + 0] = c.r as u8;
-                    screen[idx + 1] = c.g as u8;
-                    screen[idx + 2] = c.b as u8;
-                    screen[idx + 3] = c.a as u8;
-                };
+                all_points.push((pt_rot, *color));
             };
         };
+
+        all_points.sort_by(|a, b| {
+            if a.0.z < b.0.z {
+                return std::cmp::Ordering::Less;
+            } else if a.0.z > b.0.z {
+                return std::cmp::Ordering::Greater;
+            } else {
+                return std::cmp::Ordering::Equal;
+            };
+        });
+        for (pt, color) in all_points {
+            let pos_2d = self.project(pt);
+            let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);            
+
+            if let Some(idx) = idx {
+                let c = color.as_255();
+                screen[idx + 0] = c.r as u8;
+                screen[idx + 1] = c.g as u8;
+                screen[idx + 2] = c.b as u8;
+                screen[idx + 3] = c.a as u8;
+            };
+        }
         
     }
 
