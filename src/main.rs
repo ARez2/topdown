@@ -83,6 +83,9 @@ fn main() -> Result<(), Error> {
 
 pub struct World {
     pub objects: Vec<Box<dyn Drawable>>,
+    pub light_dir: Vec3,
+    pub light_intensity: f32,
+    pub rotation_x: f32,
     pub width: usize,
     pub height: usize,
     pub time: f32,
@@ -103,6 +106,9 @@ impl World {
                     Vec3::new(10.0, 10.0, 10.0),
                 )),
             ],
+            light_dir: Vec3::new(-0.5, -0.5, 1.0),
+            light_intensity: 1.0,
+            rotation_x: 0.75,
             width,
             height,
             time: 0.0,
@@ -141,17 +147,23 @@ impl World {
     pub fn draw(&self, screen: &mut [u8]) {
         screen.fill(0);
 
-        let mut all_points = Vec::<(Vec3, Color)>::new();
+        let mut all_points = Vec::<(Vec3, Color, Vec3)>::new();
 
         for object in self.objects.iter() {
             let origin = object.get_origin();
-            for (point, color) in object.get_points() {
+            for (point, color, mut normal) in object.get_points() {
+                normal = self.rotateY(normal, self.time);
+                // normal += origin;
                 let mut pt_rot = self.rotateY(*point - origin, self.time);
                 pt_rot += origin;
-                pt_rot = self.rotateX(pt_rot - origin, 0.5);
+                //let mut pt_rot = *point;
+                
+                pt_rot = self.rotateX(pt_rot - origin, self.rotation_x);
                 pt_rot += origin;
+                normal = self.rotateX(normal, self.rotation_x);
+                //normal += origin;
 
-                all_points.push((pt_rot, *color));
+                all_points.push((pt_rot, *color, normal));
             };
         };
 
@@ -164,12 +176,18 @@ impl World {
                 return std::cmp::Ordering::Equal;
             };
         });
-        for (pt, color) in all_points {
+        for (pt, color, normal) in all_points {
+            
+            let basecolor = color;
+            let normal_ratio = normal.dot(self.light_dir * 1.0) * self.light_intensity;
+            let mut lighted_color = basecolor;
+            lighted_color *= normal_ratio;
+
             let pos_2d = self.project(pt);
-            let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);            
+            let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);
 
             if let Some(idx) = idx {
-                let c = color.as_255();
+                let c = lighted_color.as_255();
                 screen[idx + 0] = c.r as u8;
                 screen[idx + 1] = c.g as u8;
                 screen[idx + 2] = c.b as u8;
@@ -179,22 +197,6 @@ impl World {
         
     }
 
-    // fn set_line(&mut self, mut start: Vec3, mut end: Vec3) {
-    //     // probably should do sutherland-hodgeman if this were more serious.
-    //     // instead just clamp the start pos, and draw until moving towards the
-    //     // end pos takes us out of bounds.
-    //     start = start.round();
-    //     end = end.round();
-    //     //let x0 = x0.max(0).min(self.width as isize);
-    //     //let y0 = y0.max(0).min(self.height as isize);
-    //     for (x, y, z) in line_drawing::Bresenham3d::new((start.x as i32, start.y as i32, start.z as i32), (end.x as i32, end.y as i32, end.z as i32)) {
-    //         if let Some(i) = self.grid_idx(x, y) {
-    //             self.cells.push(Cell{color: (255, 0, 0, 255), pos: Vec3::new(x as f32, y as f32, z as f32)});
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    // }
 
     pub fn project(&self, point: Vec3) -> Vec3 {
         Mat3::IDENTITY * point
