@@ -65,24 +65,44 @@ impl BoxShape {
             pt.0 += pos;
         };
         
-        for pt in fill_horizontal(points[BoxPt::BottomBackR as usize].0, points[BoxPt::BottomFrontL as usize].0, color) {
-            points.push((pt.0, pt.1, normals[BoxFace::Down as usize]));
+        let mut face_points = vec![];
+        for pt in fill_horizontal(points[BoxPt::TopBackR as usize].0, points[BoxPt::TopFrontL as usize].0, color) {
+            if !face_points.contains(&pt.0) {
+                points.push((pt.0, pt.1, normals[BoxFace::Up as usize]));
+                face_points.push(pt.0);
+            };
         };
         for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomFrontR as usize].0, color) {
-            points.push((pt.0, pt.1, normals[BoxFace::Front as usize]));
+            if !face_points.contains(&pt.0) {
+                points.push((pt.0, pt.1, normals[BoxFace::Front as usize]));
+                face_points.push(pt.0);
+            };
         };
         for pt in fill_vertical(points[BoxPt::TopBackL as usize].0, points[BoxPt::BottomBackR as usize].0, color) {
-            points.push((pt.0, pt.1, normals[BoxFace::Back as usize]));
+            if !face_points.contains(&pt.0) {
+                points.push((pt.0, pt.1, normals[BoxFace::Back as usize]));
+                face_points.push(pt.0);
+            };
         };
         for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomBackL as usize].0, color) {
-            points.push((pt.0, pt.1, normals[BoxFace::Left as usize]));
+            if !face_points.contains(&pt.0) {
+                points.push((pt.0, pt.1, normals[BoxFace::Left as usize]));
+                face_points.push(pt.0);
+            };
         };
         for pt in fill_vertical(points[BoxPt::TopFrontR as usize].0, points[BoxPt::BottomBackR as usize].0, color) {
-            points.push((pt.0, pt.1, normals[BoxFace::Right as usize]));
+            if !face_points.contains(&pt.0) {
+                points.push((pt.0, pt.1, normals[BoxFace::Right as usize]));
+                face_points.push(pt.0);
+            };
         };
-        for pt in fill_horizontal(points[BoxPt::TopBackR as usize].0, points[BoxPt::TopFrontL as usize].0, color) {
-            points.push((pt.0, pt.1, normals[BoxFace::Up as usize]));
-        };
+        // for pt in fill_horizontal(points[BoxPt::BottomBackR as usize].0, points[BoxPt::BottomFrontL as usize].0, color) {
+        //     if !face_points.contains(&pt.0) {
+        //         points .push((pt.0, pt.1, normals[BoxFace::Down as usize]));
+        //         face_points.push(pt.0);
+        //     };
+        // };
+        
 
         
         BoxShape {

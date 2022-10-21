@@ -14,9 +14,9 @@ use winit_input_helper::WinitInputHelper;
 use topdown::{drawable::Drawable, boxshape::BoxShape, color::Color};
 
 
-const WIDTH: u32 = 100;
-const HEIGHT: u32 = 100;
-const SCALE: f64 = 10.0;
+const WIDTH: u32 = 300;
+const HEIGHT: u32 = 200;
+const SCALE: f64 = 3.0;
 
 fn main() -> Result<(), Error> {
     env_logger::init();
@@ -86,6 +86,7 @@ pub struct World {
     pub light_dir: Vec3,
     pub light_intensity: f32,
     pub rotation_x: f32,
+    pub camera_pos: Vec3,
     pub width: usize,
     pub height: usize,
     pub time: f32,
@@ -98,17 +99,20 @@ impl World {
         World {
             objects: vec![
                 Box::new(BoxShape::new(
-                    Vec3::new(15.0, 15.0, 0.0),
-                    Vec3::new(10.0, 50.0, 10.0),
+                    Vec3::new(0.0, -10.0, 0.0),
+                    Vec3::new(10.0, 10.0, 10.0),
+                    Color::rgba(1.0, 0.3, 0.3, 1.0),
                 )),
                 Box::new(BoxShape::new(
-                    Vec3::new(60.0, 60.0, 100.0),
-                    Vec3::new(10.0, 10.0, 10.0),
+                    Vec3::new(0.0, 0.0, 0.0),
+                    Vec3::new(300.0, 1.0, 300.0),
+                    Color::rgba(0.8, 0.8, 0.8, 1.0),
                 )),
             ],
             light_dir: Vec3::new(-0.5, -0.5, 1.0),
             light_intensity: 1.0,
             rotation_x: 0.75,
+            camera_pos: Vec3::new(-150.0, -100.0, 0.0),
             width,
             height,
             time: 0.0,
@@ -150,9 +154,9 @@ impl World {
         let mut all_points = Vec::<(Vec3, Color, Vec3)>::new();
 
         for object in self.objects.iter() {
-            let origin = object.get_origin();
+            let origin = Vec3::new(0.0, 0.0, 0.0);//
             for (point, color, mut normal) in object.get_points() {
-                normal = self.rotateY(normal, self.time);
+                //normal = self.rotateY(normal, self.time);
                 // normal += origin;
                 let mut pt_rot = self.rotateY(*point - origin, self.time);
                 pt_rot += origin;
@@ -160,8 +164,10 @@ impl World {
                 
                 pt_rot = self.rotateX(pt_rot - origin, self.rotation_x);
                 pt_rot += origin;
-                normal = self.rotateX(normal, self.rotation_x);
+                //normal = self.rotateX(normal, self.rotation_x);
                 //normal += origin;
+
+                pt_rot -= self.camera_pos;
 
                 all_points.push((pt_rot, *color, normal));
             };
@@ -176,10 +182,13 @@ impl World {
                 return std::cmp::Ordering::Equal;
             };
         });
+        let light_dir_rot = self.rotateY(self.light_dir, 0.0);
         for (pt, color, normal) in all_points {
             
             let basecolor = color;
-            let normal_ratio = normal.dot(self.light_dir * 1.0) * self.light_intensity;
+            let mut normal_ratio = normal.dot(light_dir_rot * 1.0) * self.light_intensity;
+            normal_ratio = normal_ratio.min(1.0).max(0.0);
+            
             let mut lighted_color = basecolor;
             lighted_color *= normal_ratio;
 
