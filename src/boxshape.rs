@@ -35,7 +35,7 @@ pub struct BoxShape {
 }
 
 impl BoxShape {
-    pub fn new(pos: Vec3, scale: Vec3) -> Self {
+    pub fn new(pos: Vec3, scale: Vec3, color: Color) -> Self {
         let mut normals = Vec::<Vec3>::new();
         // We have 6 Faces
         normals.resize(6, Vec3::new(0.0, 0.0, 0.0));
@@ -50,7 +50,6 @@ impl BoxShape {
         let mut points = Vec::<(Vec3, Color, Vec3)>::new();
         points.resize(8, (Vec3::new(0.0, 0.0, 0.0), Color::black(), Vec3::new(0.0, 0.0, 0.0)));
 
-        let color = Color::rgba(1.0, 0.0, 0.0, 1.0);
         points[BoxPt::TopFrontL as usize] = (Vec3::new(0.0, 0.0, 0.0), color, normals[BoxFace::Up as usize]);
         points[BoxPt::TopFrontR as usize] = (Vec3::new(1.0, 0.0, 0.0), color, normals[BoxFace::Up as usize]);
         points[BoxPt::TopBackL as usize] = (Vec3::new(0.0, 0.0, 1.0), color, normals[BoxFace::Up as usize]);
@@ -61,30 +60,27 @@ impl BoxShape {
         points[BoxPt::BottomBackL as usize] = (Vec3::new(0.0, 1.0, 1.0), color, normals[BoxFace::Down as usize]);
         points[BoxPt::BottomBackR as usize] = (Vec3::new(1.0, 1.0, 1.0), color, normals[BoxFace::Down as usize]);
         for pt in points.iter_mut() {
+            pt.0 -= 0.5;
             pt.0 *= scale;
             pt.0 += pos;
         };
-
-        let blue = Color::rgba(0.0, 0.0, 1.0, 1.0);
-        let grey = Color::rgba(1.0, 0.0, 0.0, 1.0);
-
         
-        for pt in fill_horizontal(points[BoxPt::BottomBackR as usize].0, points[BoxPt::BottomFrontL as usize].0, blue) {
+        for pt in fill_horizontal(points[BoxPt::BottomBackR as usize].0, points[BoxPt::BottomFrontL as usize].0, color) {
             points.push((pt.0, pt.1, normals[BoxFace::Down as usize]));
         };
-        for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomFrontR as usize].0, grey) {
+        for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomFrontR as usize].0, color) {
             points.push((pt.0, pt.1, normals[BoxFace::Front as usize]));
         };
-        for pt in fill_vertical(points[BoxPt::TopBackL as usize].0, points[BoxPt::BottomBackR as usize].0, grey) {
+        for pt in fill_vertical(points[BoxPt::TopBackL as usize].0, points[BoxPt::BottomBackR as usize].0, color) {
             points.push((pt.0, pt.1, normals[BoxFace::Back as usize]));
         };
-        for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomBackL as usize].0, grey) {
+        for pt in fill_vertical(points[BoxPt::TopFrontL as usize].0, points[BoxPt::BottomBackL as usize].0, color) {
             points.push((pt.0, pt.1, normals[BoxFace::Left as usize]));
         };
-        for pt in fill_vertical(points[BoxPt::TopFrontR as usize].0, points[BoxPt::BottomBackR as usize].0, grey) {
+        for pt in fill_vertical(points[BoxPt::TopFrontR as usize].0, points[BoxPt::BottomBackR as usize].0, color) {
             points.push((pt.0, pt.1, normals[BoxFace::Right as usize]));
         };
-        for pt in fill_horizontal(points[BoxPt::TopBackR as usize].0, points[BoxPt::TopFrontL as usize].0, blue) {
+        for pt in fill_horizontal(points[BoxPt::TopBackR as usize].0, points[BoxPt::TopFrontL as usize].0, color) {
             points.push((pt.0, pt.1, normals[BoxFace::Up as usize]));
         };
 

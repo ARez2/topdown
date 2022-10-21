@@ -6,8 +6,10 @@ use crate::Color;
 
 pub fn fill_vertical(start: Vec3, end: Vec3, color: Color) -> Vec<(Vec3, Color)> {
     let mut points = vec![];
-    let min = (start.y.round() as usize).min(end.y.round() as usize);
-    let max = (start.y.round() as usize).max(end.y.round() as usize);
+    let (min, max) = match start.y > end.y {
+        true => (end.y.round() as i32, start.y.round() as i32),
+        false => (start.y.round() as i32, end.y.round() as i32),
+    };
     for y in min..=max {
         let mut linestart = start;
         linestart.y = y as f32;
@@ -24,8 +26,10 @@ pub fn fill_vertical(start: Vec3, end: Vec3, color: Color) -> Vec<(Vec3, Color)>
 
 pub fn fill_horizontal(start: Vec3, end: Vec3, color: Color) -> Vec<(Vec3, Color)> {
     let mut points = vec![];
-    let min = (start.x.round() as usize).min(end.x.round() as usize);
-    let max = (start.x.round() as usize).max(end.x.round() as usize);
+    let (min, max) = match start.x > end.x {
+        true => (end.x.round() as i32, start.x.round() as i32),
+        false => (start.x.round() as i32, end.x.round() as i32),
+    };
     for x in min..=max {
         let mut linestart = start;
         linestart.x = x as f32;
