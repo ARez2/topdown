@@ -105,7 +105,7 @@ impl World {
                 )),
                 Box::new(BoxShape::new(
                     Vec3::new(0.0, 0.0, 0.0),
-                    Vec3::new(300.0, 1.0, 300.0),
+                    Vec3::new(500.0, 1.0, 500.0),
                     Color::rgba(0.8, 0.8, 0.8, 1.0),
                 )),
             ],
@@ -144,6 +144,11 @@ impl World {
     }
 
 
+    fn is_in_bounds(&self, pt: Vec3) -> bool {
+        (pt.x >= -1.0 && pt.x <= WIDTH as f32)
+        && (pt.y >= -1.0 && pt.y <= HEIGHT as f32)
+    }
+
     pub fn update(&mut self) {
         self.time += 0.04;
     }
@@ -151,6 +156,7 @@ impl World {
     pub fn draw(&self, screen: &mut [u8]) {
         screen.fill(0);
 
+        // (2D Position, Color, Normal)
         let mut all_points = Vec::<(Vec3, Color, Vec3)>::new();
 
         for object in self.objects.iter() {
@@ -166,10 +172,12 @@ impl World {
                 pt_rot += origin;
                 //normal = self.rotateX(normal, self.rotation_x);
                 //normal += origin;
-
+                
                 pt_rot -= self.camera_pos;
-
-                all_points.push((pt_rot, *color, normal));
+                let pos_2d = self.project(pt_rot);
+                if self.is_in_bounds(pos_2d) {
+                    all_points.push((pos_2d, *color, normal));
+                };
             };
         };
 
@@ -183,16 +191,22 @@ impl World {
             };
         });
         let light_dir_rot = self.rotateY(self.light_dir, 0.0);
-        for (pt, color, normal) in all_points {
+        let mut prev_normal = Vec3::ZERO;
+        let mut prev_ratio = 0.0;
+        for (pos_2d, color, normal) in all_points {
             
             let basecolor = color;
-            let mut normal_ratio = normal.dot(light_dir_rot * 1.0) * self.light_intensity;
-            normal_ratio = normal_ratio.min(1.0).max(0.0);
-            
+            let normal_ratio = match normal == prev_normal {
+                true => prev_ratio,
+                false => {
+                    let r = normal.dot(light_dir_rot * 1.0) * self.light_intensity;
+                    r.min(1.0).max(0.0)
+                },
+            };
+
             let mut lighted_color = basecolor;
             lighted_color *= normal_ratio;
-
-            let pos_2d = self.project(pt);
+            
             let idx = self.screen_idx(pos_2d.x.round() as usize, pos_2d.y.round() as usize);
 
             if let Some(idx) = idx {
@@ -202,6 +216,9 @@ impl World {
                 screen[idx + 2] = c.b as u8;
                 screen[idx + 3] = c.a as u8;
             };
+
+            prev_normal = normal;
+            prev_ratio = normal_ratio;
         }
         
     }
